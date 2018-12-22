@@ -32,7 +32,10 @@ class Packet(object):
         elif mrag.row < 25:
             packet = DisplayPacket.from_bytes(mrag, bytes)
         elif mrag.row == 27:
-            packet = FastextPacket.from_bytes(mrag, bytes)
+            if hamming8_decode(bytes[2])[0] < 4: # editorial links
+                packet = FastextPacket.from_bytes(mrag, bytes)
+            else: # compositional linking
+                packet = EnhancementPacket.from_bytes(mrag, bytes)
         elif mrag.row == 30:
             packet = BroadcastPacket.from_bytes(mrag, bytes)
         else:
@@ -47,6 +50,21 @@ class Packet(object):
     def to_bytes(self):
         return ''
 
+class EnhancementPacket(Packet):
+
+    def __init__(self, mrag, data):
+        Packet.__init__(self, mrag)
+        self.data = data
+
+    @classmethod
+    def from_bytes(cls, mrag, bytes):
+        return cls(mrag, bytes[2:])
+
+    def to_ansi(self, colour=True):
+        return 'Row='+ str(self.mrag.row) + ' DC=' + str(hamming8_decode(self.data[0])[0])
+
+    def to_bytes(self):
+        return self.mrag.to_bytes() + self.data.tostring()
 
 class DisplayPacket(Packet):
 
@@ -104,12 +122,14 @@ class HeaderPacket(DisplayPacket):
 
 class FastextPacket(Packet):
 
-    def __init__(self, mrag, links=[None for n in range(6)]):
+    def __init__(self, mrag, lc, cs, links=[None for n in range(6)]):
         Packet.__init__(self, mrag)
         self.__links = [PageLink() for n in range(6)]
         for n in range(6):
             if links[n]:
                 self.__links[n] = links[n]
+        self.lc = lc
+        self.cs = cs
 
     @property
     def links(self):
@@ -118,14 +138,15 @@ class FastextPacket(Packet):
     @classmethod
     def from_bytes(cls, mrag, bytes):
         links = [PageLink.from_bytes(bytes[n:n+6], mrag.magazine) for n in range(3, 39, 6)]
-        return cls(mrag, links)
+        lc = hamming8_decode(bytes[39])[0]
+        cs = bytes[40]<<8 | bytes[41]
+        return cls(mrag, lc, cs, links)
 
     def to_ansi(self, colour=True):
         return ' '.join((str(link) for link in self.links))
 
     def to_bytes(self):
-        return self.mrag.to_bytes() + chr(hamming8_encode(0)) + ''.join([x.to_bytes(self.mrag.magazine) for x in self.links]) + chr(hamming8_encode(0xf)) + '  '
-        # TODO use the real designation code and link control
+        return self.mrag.to_bytes() + chr(hamming8_encode(0)) + ''.join([x.to_bytes(self.mrag.magazine) for x in self.links]) + chr(hamming8_encode(self.lc)) + chr(self.cs >> 8) + chr(self.cs & 0xFF)
 
 
 class BroadcastPacket(Packet):
