@@ -96,27 +96,28 @@ def split_seq(iterable, size):
         yield item
         item = list(itertools.islice(it, size))
 
-it = raw_line_map(args.inputfile, config.line_length, doit, start=args.start, stop=args.stop, threads=args.threads, show_speed=True)
+if __name__ == '__main__':
+    it = raw_line_map(args.inputfile, config.line_length, doit, start=args.start, stop=args.stop, threads=args.threads, show_speed=True)
 
-if args.squash > 1:
-    for l_list in split_seq(it, args.squash):
-        a = numpy.array([l.bytes_array for l in l_list])
-        best, counts = mode(a)
-        best = best[0].astype(numpy.uint8)
-        if args.t42:
-            best.tofile(sys.stdout)
-        elif args.ansi:
-            if args.numbered:
-                sys.stdout.write(('%8d ' % l_list[0].offset))
-            sys.stdout.write(Packet.from_bytes(best).to_ansi() + '\n')
+    if args.squash > 1:
+        for l_list in split_seq(it, args.squash):
+            a = numpy.array([l.bytes_array for l in l_list])
+            best, counts = mode(a)
+            best = best[0].astype(numpy.uint8)
+            if args.t42:
+                best.tofile(sys.stdout)
+            elif args.ansi:
+                if args.numbered:
+                    sys.stdout.write(('%8d ' % l_list[0].offset))
+                sys.stdout.write(Packet.from_bytes(best).to_ansi() + '\n')
 
-else:
-    for l in it:
-        if args.t42:
-            l.bytes_array.tofile(sys.stdout)
-        elif args.ansi:
-            if args.numbered:
-                sys.stdout.write(('%8d ' % l.offset))
-            sys.stdout.write(Packet.from_bytes(l.bytes_array).to_ansi() + '\n')
+    else:
+        for l in it:
+            if args.t42:
+                l.bytes_array.tofile(sys.stdout)
+            elif args.ansi:
+                if args.numbered:
+                    sys.stdout.write(('%8d ' % l.offset))
+                sys.stdout.write(Packet.from_bytes(l.bytes_array).to_ansi() + '\n')
 
-sys.stderr.write('\n')
+    sys.stderr.write('\n')

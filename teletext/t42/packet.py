@@ -149,8 +149,8 @@ class BroadcastPacket(Packet):
 
 from printer import PrinterANSI
 
-import enchant
-d = enchant.Dict('en_GB')
+#import enchant
+#d = enchant.Dict('en_GB')
 
 
 freecombos = [
@@ -183,6 +183,7 @@ def case_match(word, src):
     return ''.join([c.lower() if d.islower() else c.upper() for c, d in zip(word, src)])
 
 def spellcheck(packet):
+    '''
     if type(packet) == DisplayPacket or type(packet) == HeaderPacket:
         words = str(PrinterANSI(packet.displayable, False)).decode('utf-8')
         words = ''.join([c if c.isalnum() else ' ' for c in words])
@@ -198,4 +199,4 @@ def spellcheck(packet):
         for n,c in enumerate(words):
             if c != ' ':
                 packet.displayable[n] = ord(c)
-
+    '''
