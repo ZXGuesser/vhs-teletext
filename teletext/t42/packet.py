@@ -124,7 +124,8 @@ class FastextPacket(Packet):
         return ' '.join((str(link) for link in self.links))
 
     def to_bytes(self):
-        return self.mrag.to_bytes() + ' ' + ''.join([x.to_bytes(self.mrag.magazine) for x in self.links]) + '   '
+        return self.mrag.to_bytes() + chr(hamming8_encode(0)) + ''.join([x.to_bytes(self.mrag.magazine) for x in self.links]) + chr(hamming8_encode(0xf)) + '  '
+        # TODO use the real designation code and link control
 
 
 class BroadcastPacket(Packet):
