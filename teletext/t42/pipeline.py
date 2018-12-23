@@ -81,9 +81,9 @@ def subpage_squash(packet_iter, minimum_dups=3, pages=All, yield_func=packets):
             elif p.mrag.row == 26: # 16 rows of enhancement packets
                 arr[:,p.mrag.row + p.dc] = p._original_bytes
             elif p.mrag.row == 27: # 16 rows of link packets
-                arr[:,p.mrag.row + 16 + p.dc] = p._original_bytes
+                arr[:,42 + p.dc] = p._original_bytes
             elif p.mrag.row == 28: # 16 rows of enhancement packets
-                arr[:,p.mrag.row + 32 + p.dc] = p._original_bytes
+                arr[:,58 + p.dc] = p._original_bytes
         subpages[subpagekey].append(arr)
 
     for arrlist in subpages.itervalues():
@@ -91,7 +91,7 @@ def subpage_squash(packet_iter, minimum_dups=3, pages=All, yield_func=packets):
             arr = mode(numpy.array(arrlist), axis=0)[0][0].astype(numpy.uint8)
             packets = []
 
-            for i in range(55):
+            for i in range(74):
                 if arr[:,i].any():
                     packets.append(Packet.from_bytes(arr[:,i]))
 
