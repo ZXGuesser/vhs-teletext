@@ -15,8 +15,8 @@ class Subpage(object):
         self.control = 0
         self.__links = [link if link else PageLink() for link in links]
         self.packet26 = numpy.full((40, 16), fill, dtype=numpy.uint8)
-        self.packet27 = numpy.full((40, 4), fill, dtype=numpy.uint8)
-        self.packet28 = numpy.full((40, 5), fill, dtype=numpy.uint8)
+        self.packet27 = numpy.full((40, 16), fill, dtype=numpy.uint8)
+        self.packet28 = numpy.full((40, 16), fill, dtype=numpy.uint8)
 
     @property
     def links(self):
@@ -43,7 +43,7 @@ class Subpage(object):
                 if p.mrag.row == 26:
                     s.packet26[:,p.dc] = p.data
                 elif p.mrag.row == 27:
-                    s.packet27[:,p.dc-4] = p.data
+                    s.packet27[:,p.dc] = p.data
                 elif p.mrag.row == 28:
                     s.packet28[:,p.dc] = p.data
 
