@@ -74,16 +74,16 @@ def subpage_squash(packet_iter, minimum_dups=3, pages=All, yield_func=packets):
     subpages = defaultdict(list)
     for pl in paginate(packet_iter, pages=pages, yield_func=packet_lists, drop_empty=True):
         subpagekey = (pl[0].mrag.magazine, pl[0].header.page, pl[0].header.subpage)
-        arr = numpy.zeros((42, 55), dtype=numpy.uint8)
+        arr = numpy.zeros((42, 74), dtype=numpy.uint8)
         for p in pl:
             if p.mrag.row < 26: # header plus 25 text rows
                 arr[:,p.mrag.row] = p._original_bytes
             elif p.mrag.row == 26: # 16 rows of enhancement packets
                 arr[:,p.mrag.row + p.dc] = p._original_bytes
-            elif p.mrag.row == 27 and p.dc < 8: # 8 rows of link packets
+            elif p.mrag.row == 27: # 16 rows of link packets
                 arr[:,p.mrag.row + 16 + p.dc] = p._original_bytes
-            elif p.mrag.row == 28 and p.dc < 5: # 5 rows of enhancement packets
-                arr[:,p.mrag.row + 24 + p.dc] = p._original_bytes
+            elif p.mrag.row == 28: # 16 rows of enhancement packets
+                arr[:,p.mrag.row + 32 + p.dc] = p._original_bytes
         subpages[subpagekey].append(arr)
 
     for arrlist in subpages.itervalues():

@@ -36,15 +36,10 @@ class Packet(object):
         elif mrag.row == 27:
             if hamming8_decode(bytes[2])[0] < 4: # editorial links
                 packet = FastextPacket.from_bytes(mrag, bytes)
-            elif hamming8_decode(bytes[2])[0] < 8: # compositional linking
+            else: # compositional linking
                 packet = EnhancementPacket.from_bytes(mrag, bytes)
-            else:
-                packet = Packet(mrag) # invalid designation code
         elif mrag.row == 28:
-            if hamming8_decode(bytes[2])[0] < 5:
-                packet = EnhancementPacket.from_bytes(mrag, bytes)
-            else:
-                packet = Packet(mrag) # invalid designation code
+            packet = EnhancementPacket.from_bytes(mrag, bytes)
         elif mrag.row == 30:
             packet = BroadcastPacket.from_bytes(mrag, bytes)
         else:
