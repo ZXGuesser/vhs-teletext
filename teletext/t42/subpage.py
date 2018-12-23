@@ -14,6 +14,9 @@ class Subpage(object):
         self.displayable = numpy.full((40, 25), fill, dtype=numpy.uint8)
         self.control = 0
         self.__links = [link if link else PageLink() for link in links]
+        self.packet26 = numpy.full((40, 16), fill, dtype=numpy.uint8)
+        self.packet27 = numpy.full((40, 4), fill, dtype=numpy.uint8)
+        self.packet28 = numpy.full((40, 5), fill, dtype=numpy.uint8)
 
     @property
     def links(self):
@@ -30,10 +33,19 @@ class Subpage(object):
                 s._original_magazine = p.mrag.magazine
                 s._original_displayable = p.displayable
             elif type(p) == FastextPacket:
-                for i in range(6):
-                    s.links[i] = p.links[i]
+                if p.dc == 0:
+                    for i in range(6):
+                        s.links[i] = p.links[i]
+                # TODO: DC 1-3
             elif type(p) == DisplayPacket:
                 s.displayable[:,p.mrag.row-1] = p.displayable
+            elif type(p) == EnhancementPacket:
+                if p.mrag.row == 26:
+                    s.packet26[:,p.dc] = p.data
+                elif p.mrag.row == 27:
+                    s.packet27[:,p.dc-4] = p.data
+                elif p.mrag.row == 28:
+                    s.packet28[:,p.dc] = p.data
 
         return s
 
@@ -42,8 +54,13 @@ class Subpage(object):
         for i in range(0, 25):
             if (self.displayable[:,i] != 0x20).any():
                 yield DisplayPacket(Mrag(magazineno, i+1), self.displayable[:,i])
+        for i in range(0, 16):
+            if (self.packet26[:,i] != 0x20).any():
+                yield EnhancementPacket(Mrag(magazineno, 26), self.packet26[:,i])
+        for i in range(0, 5):
+            if (self.packet28[:,i] != 0x20).any():
+                yield EnhancementPacket(Mrag(magazineno, 28), self.packet28[:,i])
         yield FastextPacket(Mrag(magazineno, 27), self.links)
-
 
     def to_html(self, magazineno, pageno, subpageno, header_displayable=numpy.full((32,), 0x20, dtype=numpy.uint8), pages_set=All):
         body = []

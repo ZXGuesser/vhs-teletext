@@ -38,6 +38,8 @@ class Packet(object):
                 packet = FastextPacket.from_bytes(mrag, bytes)
             else: # compositional linking
                 packet = EnhancementPacket.from_bytes(mrag, bytes)
+        elif mrag.row == 28:
+            packet = EnhancementPacket.from_bytes(mrag, bytes)
         elif mrag.row == 30:
             packet = BroadcastPacket.from_bytes(mrag, bytes)
         else:
@@ -54,13 +56,18 @@ class Packet(object):
 
 class EnhancementPacket(Packet):
 
-    def __init__(self, mrag, data):
+    def __init__(self, mrag, dc, data):
         Packet.__init__(self, mrag)
+        self.dc = dc
         self.data = data
 
     @classmethod
     def from_bytes(cls, mrag, bytes):
-        return cls(mrag, bytes[2:])
+        dc = hamming8_decode(bytes[2])[0]
+        return cls(mrag, dc, bytes[2:])
+    
+    def dc(self):
+        return self.dc
 
     def to_ansi(self, colour=True):
         return 'Row='+ str(self.mrag.row) + ' DC=' + str(hamming8_decode(self.data[0])[0])
