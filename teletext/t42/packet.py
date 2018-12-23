@@ -36,10 +36,15 @@ class Packet(object):
         elif mrag.row == 27:
             if hamming8_decode(bytes[2])[0] < 4: # editorial links
                 packet = FastextPacket.from_bytes(mrag, bytes)
-            else: # compositional linking
+            elif hamming8_decode(bytes[2])[0] < 8: # compositional linking
                 packet = EnhancementPacket.from_bytes(mrag, bytes)
+            else:
+                packet = Packet(mrag) # invalid designation code
         elif mrag.row == 28:
-            packet = EnhancementPacket.from_bytes(mrag, bytes)
+            if hamming8_decode(bytes[2])[0] < 5:
+                packet = EnhancementPacket.from_bytes(mrag, bytes)
+            else:
+                packet = Packet(mrag) # invalid designation code
         elif mrag.row == 30:
             packet = BroadcastPacket.from_bytes(mrag, bytes)
         else:
@@ -56,7 +61,7 @@ class Packet(object):
 
 class EnhancementPacket(Packet):
 
-    def __init__(self, mrag, dc, data):
+    def __init__(self, mrag, data, dc=0):
         Packet.__init__(self, mrag)
         self.dc = dc
         self.data = data
@@ -64,7 +69,7 @@ class EnhancementPacket(Packet):
     @classmethod
     def from_bytes(cls, mrag, bytes):
         dc = hamming8_decode(bytes[2])[0]
-        return cls(mrag, dc, bytes[2:])
+        return cls(mrag, bytes[2:], dc)
     
     def dc(self):
         return self.dc
@@ -131,7 +136,7 @@ class HeaderPacket(DisplayPacket):
 
 class FastextPacket(Packet):
 
-    def __init__(self, mrag, dc, lc, cs, links=[None for n in range(6)]):
+    def __init__(self, mrag, links=[None for n in range(6)], dc=0x0, lc=0xf, cs=0):
         Packet.__init__(self, mrag)
         self.__links = [PageLink() for n in range(6)]
         for n in range(6):
@@ -154,7 +159,7 @@ class FastextPacket(Packet):
         dc = hamming8_decode(bytes[2])[0]
         lc = hamming8_decode(bytes[39])[0]
         cs = bytes[40]<<8 | bytes[41]
-        return cls(mrag, dc, lc, cs, links)
+        return cls(mrag, links, dc, lc, cs)
 
     def to_ansi(self, colour=True):
         return ' '.join((str(link) for link in self.links))
