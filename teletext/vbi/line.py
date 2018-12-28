@@ -16,7 +16,7 @@ from util import normalise
 
 from pattern import Pattern
 
-from teletext.t42.elements import Mrag
+from teletext.t42.elements import Mrag, DC
 
 
 # Line: Handles a single line of raw VBI samples.
@@ -110,16 +110,25 @@ class Line(object):
         m = Mrag.from_bytes(self.bytes_array[:2])
         self.magazine = m.magazine
         self.row = m.row
-
+        
+        if self.row > 25:
+            # also decode designation code for packets > 25
+            self.bytes_array[2:3] = Line.h.match(self.bits_array[32:56]) # designation code
+            self.dc = DC.from_bytes(self.bytes_array[2]).dc
 
     def bytes(self):
         """Finds the rest of the line."""
         if self.row == 0:
             self.bytes_array[2:10] = Line.h.match(self.bits_array[32:112])
             self.bytes_array[10:] = Line.p.match(self.bits_array[96:368])
-        elif self.row == 27:
-            self.bytes_array[2:40] = Line.h.match(self.bits_array[32:352])
-            # skip the last two bytes as they are not really useful
-        else:
+        elif self.row < 26:
             self.bytes_array[2:] = Line.p.match(self.bits_array[32:368])
+        elif self.row == 27:
+            if self.dc < 4:
+                self.bytes_array[2:40] = Line.h.match(self.bits_array[32:352])
+                # skip the last two bytes as they are not really useful
+            else:
+                self.bytes_array[3:] = Line.p.match(self.bits_array[40:368]) # TODO: proper codings
+        else:
+            self.bytes_array[3:] = Line.p.match(self.bits_array[40:368]) # TODO: proper codings
 

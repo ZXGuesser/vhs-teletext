@@ -25,6 +25,21 @@ class Mrag(object):
         b = self.row>>1
         return chr(hamming8_encode(a)) + chr(hamming8_encode(b))
 
+class DC(object):
+    """Designation code. The third byte of packets > 25."""
+
+    def __init__(self, dc=0, errors=0):
+        self.dc = dc
+        self.errors = 0
+
+    @classmethod
+    def from_bytes(cls, bytes):
+        value,errors = hamming8_decode(bytes)
+        dc = value&0xF
+        return cls(dc, errors)
+
+    def to_bytes(self):
+        return chr(hamming8_encode(self.dc))
 
 class PageHeader(object):
     page = PageNumber()
