@@ -25,6 +25,10 @@ from teletext.misc.all import All
 
 from teletext.t42.coding import parity_set, hamming_set
 
+if sys.platform == "win32":
+    import os, msvcrt
+    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+
 parser = argparse.ArgumentParser(description='Training tool.')
 
 group = parser.add_mutually_exclusive_group()

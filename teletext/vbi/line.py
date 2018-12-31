@@ -31,6 +31,7 @@ class Line(object):
     #TODO: Handle this with setup.py
     h = Pattern(os.path.dirname(__file__)+'/data/hamming.dat')
     p = Pattern(os.path.dirname(__file__)+'/data/parity.dat')
+    f = Pattern(os.path.dirname(__file__)+'/data/full.dat')
 
     try_cuda = True
     cuda_ready = False
@@ -47,6 +48,7 @@ class Line(object):
             #TODO: Handle this with setup.py
             Line.h = PatternCUDA(os.path.dirname(__file__)+'/data/hamming.dat')
             Line.p = PatternCUDA(os.path.dirname(__file__)+'/data/parity.dat')
+            Line.f = PatternCUDA(os.path.dirname(__file__)+'/data/full.dat')
             Line.cuda_ready = True
         except Exception as e:
             sys.stderr.write(str(e) + '\n')
@@ -126,9 +128,15 @@ class Line(object):
         elif self.row == 27:
             if self.dc < 4:
                 self.bytes_array[2:40] = Line.h.match(self.bits_array[32:352])
-                # skip the last two bytes as they are not really useful
+                self.bytes_array[40:] = Line.f.match(self.bits_array[336:368])
             else:
-                self.bytes_array[3:] = Line.p.match(self.bits_array[40:368]) # TODO: proper codings
+                self.bytes_array[3:] = Line.f.match(self.bits_array[40:368]) # TODO: proper codings
+        elif self.row < 30:
+            self.bytes_array[3:] = Line.f.match(self.bits_array[40:368]) # TODO: proper codings
+        elif self.row == 30 and self.magazine == 0: # BDSP
+            self.bytes_array[3:9] = Line.h.match(self.bits_array[40:104]) # initial page
+            self.bytes_array[9:22] = Line.f.match(self.bits_array[88:208]) # 8-bit data
+            self.bytes_array[22:] = Line.p.match(self.bits_array[192:368]) # status display
         else:
-            self.bytes_array[3:] = Line.p.match(self.bits_array[40:368]) # TODO: proper codings
+            self.bytes_array[3:] = Line.f.match(self.bits_array[40:368]) # TODO: proper codings
 

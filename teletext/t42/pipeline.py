@@ -2,7 +2,7 @@ import numpy
 
 from collections import defaultdict
 
-from scipy.stats.mstats import mode
+from scipy.stats.stats import mode
 
 from functools import partial
 from operator import itemgetter
@@ -74,30 +74,42 @@ def subpage_squash(packet_iter, minimum_dups=3, pages=All, yield_func=packets):
     subpages = defaultdict(list)
     for pl in paginate(packet_iter, pages=pages, yield_func=packet_lists, drop_empty=True):
         subpagekey = (pl[0].mrag.magazine, pl[0].header.page, pl[0].header.subpage)
-        arr = numpy.zeros((42, 74), dtype=numpy.uint8)
+        arr = numpy.zeros((42, 74))
         for p in pl:
             if p.mrag.row < 26: # header plus 25 text rows
                 arr[:,p.mrag.row] = p._original_bytes
+            elif p.mrag.row == 27 and p.dc < 4: # 4 rows of hamming 8/4 link packets
+                arr[:,26 + p.dc] = p._original_bytes
+            
             elif p.mrag.row == 26: # 16 rows of enhancement packets
-                arr[:,p.mrag.row + p.dc] = p._original_bytes
-            elif p.mrag.row == 27: # 16 rows of link packets
-                arr[:,42 + p.dc] = p._original_bytes
+                arr[:,30 + p.dc] = numpy.pad(p.to_triplets(),(0,28), 'constant')
+            elif p.mrag.row == 27: # 12 rows of hamming 28/18 link packets
+                arr[:,46 + p.dc] = numpy.pad(p.to_triplets(),(0,28), 'constant')
             elif p.mrag.row == 28: # 16 rows of enhancement packets
-                arr[:,58 + p.dc] = p._original_bytes
+                arr[:,58 + p.dc] = numpy.pad(p.to_triplets(),(0,28), 'constant')
         subpages[subpagekey].append(arr)
 
     for arrlist in subpages.itervalues():
         if len(arrlist) >= minimum_dups:
-            arr = mode(numpy.array(arrlist), axis=0)[0][0].astype(numpy.uint8)
+            # take bytewise modal average of rows X/0-X/25 and X/27/0-X/27/3
+            arr1 = mode(numpy.array(arrlist)[:,:,:30], axis=0)[0][0].astype(numpy.uint8)
+            
             packets = []
 
-            for i in range(74):
-                if arr[:,i].any():
-                    packets.append(Packet.from_bytes(arr[:,i]))
-
+            for i in range(30):
+                if arr1[:,i].any():
+                    packets.append(Packet.from_bytes(arr1[:,i]))
+            
+            # average triplets, omitting any with errors
+            arr2 = mode(numpy.array(arrlist)[:,:,30:], axis=0, nan_policy='omit')[0][0].astype(numpy.uint32)
+            
+            for i in range(44):
+                if arr2[:,i].any():
+                    packets.append(Packet.from_triplets(arr2[:,i]))
+            
             for item in yield_func(packets):
                 yield item
-
+            
 def split_seq(iterable, size):
     it = iter(iterable)
     item = list(itertools.islice(it, size))

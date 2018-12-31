@@ -26,6 +26,10 @@ from teletext.t42.packet import Packet
 
 from scipy.stats.mstats import mode
 
+if sys.platform == "win32":
+    import os, msvcrt
+    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('inputfile', type=str, help='Read VBI samples from this file.')
 group = parser.add_mutually_exclusive_group()

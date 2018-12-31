@@ -16,6 +16,15 @@ class Packet(object):
         return self.__mrag
 
     @classmethod
+    def from_triplets(cls, data):
+        bytes = numpy.zeros((42), dtype=numpy.uint8)
+        for i in range (14):
+            bytes[i*3] = (data[i] & 0xFF)
+            bytes[i*3+1] = ((data[i]>>8) & 0xFF)
+            bytes[i*3+2] = ((data[i]>>16) & 0xFF)
+        return cls.from_bytes(bytes)
+    
+    @classmethod
     def from_bytes(cls, data):
         """Packet factory which returns the appropriate type object for the packet."""
         if type(data) == str:
@@ -54,6 +63,7 @@ class Packet(object):
     def to_bytes(self):
         return ''
 
+
 class EnhancementPacket(Packet):
 
     def __init__(self, mrag, data, dc=0):
@@ -74,6 +84,17 @@ class EnhancementPacket(Packet):
 
     def to_bytes(self):
         return self.mrag.to_bytes() + self.data.tostring()
+    
+    def to_triplets(self):
+        triplets = []
+        triplets.append(self._original_bytes[0]+(self._original_bytes[1]<<8)+(self._original_bytes[2]<<16)) # mrag and dc
+        for i in range (1,14):
+            orig = self._original_bytes[3*i]+(self._original_bytes[3*i+1]<<8)+(self._original_bytes[3*i+2]<<16)
+            if hamming24_decode(orig)[1] > 0:
+                triplets.append(numpy.nan) # if triplet has errors store nan
+            else:
+                triplets.append(orig)
+        return triplets
 
 class DisplayPacket(Packet):
 
