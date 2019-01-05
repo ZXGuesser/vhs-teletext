@@ -14,6 +14,7 @@ from multiprocessing.pool import IMapIterator, Pool
 import itertools
 import time
 import sys
+import os
 
 # raw file handler
 
@@ -27,12 +28,13 @@ IMapIterator.next = wrapper(IMapIterator.next)
 
 
 class SpeedMonitor(object):
-    def __init__(self):
+    def __init__(self, lines):
         self.start_time = time.time()
         self.update_time = self.start_time
         self.teletext = 0
         self.rejects = 0
         self.total = 0
+        self.lines = lines
 
 
     def tally(self, is_teletext):
@@ -45,10 +47,11 @@ class SpeedMonitor(object):
             elapsed = time.time() - self.start_time
             m,s = divmod(elapsed, 60)
             h,m = divmod(m, 60)
+            completed = float(self.total) / self.lines
             total_lines_sec = self.total / elapsed
             teletext_lines_sec = self.teletext / elapsed
-            rejects_percent = self.rejects * 100.0 / self.total
-            sys.stderr.write('%d:%02d:%02d : %d lines, %.0f/s total, %.0f/s teletext, %.0f%% rejected.   \r' % (h, m, s, self.total, total_lines_sec, teletext_lines_sec, rejects_percent))
+            rejected = float(self.rejects) / self.total
+            sys.stderr.write('{:02d}:{:02d}:{:02d} : {:d}/{:d} lines ({:.2%}), {:.0f}/s total, {:.0f}/s teletext, {:.2%} rejected.   \r'.format(int(h), int(m), int(s), self.total, self.lines, completed, total_lines_sec, teletext_lines_sec, rejected))
             self.update_time = time.time()
 
 
@@ -69,9 +72,14 @@ def raw_line_reader(filename, line_length, start=0, stop=-1):
 
 
 def raw_line_map(filename, line_length, func, start=0, stop=-1, threads=1, pass_teletext=True, pass_rejects=False, show_speed=True):
-
+    if stop < 0:
+        statinfo = os.stat(filename)
+        lines = statinfo.st_size / 2048
+    else:
+        lines = stop
+    
     if show_speed:
-        s = SpeedMonitor()
+        s = SpeedMonitor(lines)
 
     if threads > 0:
         p = Pool(threads)
