@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import struct
+import collections
+
+def main():
+    # with experimental signal loss detection
+    
+    vbi = os.open(sys.argv[1], os.O_RDONLY)
+
+    out = open(sys.argv[2]+".vbi", 'wb')
+    bad = open(sys.argv[2]+".bad", 'w')
+    
+    oldframes = collections.deque(maxlen=256) # circular buffer of old lines
+
+    data = os.read(vbi,2048*32)
+    for i in range (0,32):
+        oldframes.append(data[2048*i:-4])
+    prev_seq, = struct.unpack('<I', data[-4:])
+    dropped = 0
+    repeated = 0
+    frames = 0
+
+    while True:
+      data = os.read(vbi,2048*32)
+      seq, = struct.unpack('<I', data[-4:])
+      
+      for i in range(0,32):
+          if data[2048*i:-4] in oldframes: # compare data to previous frames to detect stopped tape
+              repeated += 1
+              sys.stderr.write('%d repeating frames detected %d\n' % (frames*32, repeated))
+              bad.write('%d repeating\n' % (frames*32))
+              break
+      else:
+          for j in range (0,32):
+              oldframes.append(data[2048*j:-4]) # add frame lines to circular buffer
+          out.write(data)
+
+          if seq != (prev_seq + 1):
+              dropped += 1
+              sys.stderr.write('%d Frame drop? %d\n' % (frames*32, dropped))
+              bad.write('%d dropped\n' % (frames*32))
+          frames += 1
+      prev_seq = seq
+
+if __name__ == '__main__': main()
+
