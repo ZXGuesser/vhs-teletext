@@ -47,11 +47,14 @@ class SpeedMonitor(object):
             elapsed = time.time() - self.start_time
             m,s = divmod(elapsed, 60)
             h,m = divmod(m, 60)
-            completed = float(self.total) / self.lines
+            sys.stderr.write('{:02d}:{:02d}:{:02d} : '.format(int(h), int(m), int(s)))
+            if self.lines > 0:
+                completed = float(self.total) / self.lines
+                sys.stderr.write('{:d}/{:d} lines ({:.2%}), '.format(self.total, self.lines, completed))
             total_lines_sec = self.total / elapsed
             teletext_lines_sec = self.teletext / elapsed
             rejected = float(self.rejects) / self.total
-            sys.stderr.write('{:02d}:{:02d}:{:02d} : {:d}/{:d} lines ({:.2%}), {:.0f}/s total, {:.0f}/s teletext, {:.2%} rejected.   \r'.format(int(h), int(m), int(s), self.total, self.lines, completed, total_lines_sec, teletext_lines_sec, rejected))
+            sys.stderr.write('{:.0f}/s total, {:.0f}/s teletext, {:.2%} rejected.   \r'.format(total_lines_sec, teletext_lines_sec, rejected))
             self.update_time = time.time()
 
 
