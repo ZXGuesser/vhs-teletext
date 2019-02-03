@@ -28,27 +28,24 @@ class Line(object):
     def set_config(config):
         Line.config = config
 
-    #TODO: Handle this with setup.py
-    h = Pattern(os.path.dirname(__file__)+'/data/hamming.dat')
-    p = Pattern(os.path.dirname(__file__)+'/data/parity.dat')
-    f = Pattern(os.path.dirname(__file__)+'/data/full.dat')
-
     try_cuda = True
     cuda_ready = False
 
     @staticmethod
     def disable_cuda():
         sys.stderr.write('CUDA disabled by user request.\n')
+        Line.h = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/hamming.dat')
+        Line.p = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/parity.dat')
+        Line.f = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/full.dat')
         Line.try_cuda = False
 
     @staticmethod
     def try_init_cuda():
         try:
             from patterncuda import PatternCUDA
-            #TODO: Handle this with setup.py
-            Line.h = PatternCUDA(os.path.dirname(__file__)+'/data/hamming.dat')
-            Line.p = PatternCUDA(os.path.dirname(__file__)+'/data/parity.dat')
-            Line.f = PatternCUDA(os.path.dirname(__file__)+'/data/full.dat')
+            Line.h = PatternCUDA(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/hamming.dat')
+            Line.p = PatternCUDA(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/parity.dat')
+            Line.f = PatternCUDA(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/full.dat')
             Line.cuda_ready = True
         except Exception as e:
             sys.stderr.write(str(e) + '\n')

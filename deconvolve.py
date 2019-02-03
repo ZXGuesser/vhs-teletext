@@ -45,11 +45,12 @@ parser.add_argument('-H', '--headers', help='Synonym for --ansi --numbered --row
 parser.add_argument('-S', '--squash', metavar='N', type=int, help='Merge N consecutive rows to reduce output.', default=1)
 parser.add_argument('-C', '--force-cpu', help='Disable CUDA even if it is available.', action='store_true')
 parser.add_argument('-T', '--threads', type=int, help='Number of CPU worker threads. Default 1.', default=1)
-
+parser.add_argument('-p', '--patterns', help='Pattern set (sp/lp). Default sp.', default='sp')
 parser.add_argument('--start', type=int, metavar='N', help='Start after the Nth line of the input file.', default=0)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--stop', type=int, metavar='N', help='Stop before the Nth line of the input file.', default=-1)
 group.add_argument('--count', type=int, metavar='N', help='Stop after processing N lines from the input file.', default=-1)
+
 
 
 args = parser.parse_args()
@@ -74,6 +75,7 @@ try:
 except ImportError:
     sys.stderr.write('No configuration file for '+args.config+'.\n')
 
+config.patterns = args.patterns
 Line.set_config(config)
 
 if args.force_cpu:
