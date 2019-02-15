@@ -159,6 +159,7 @@ if __name__ == '__main__':
     except ImportError:
         sys.stderr.write('No configuration file for '+args.config+'.\n')
 
+    config.patterns = "sp"
     Line.set_config(config)
     Line.disable_cuda()
 
