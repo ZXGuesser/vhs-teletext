@@ -48,6 +48,9 @@ class Line(object):
             Line.f = PatternCUDA(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/full.dat')
             Line.cuda_ready = True
         except Exception as e:
+            Line.h = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/hamming.dat')
+            Line.p = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/parity.dat')
+            Line.f = Pattern(os.path.dirname(__file__)+'/data/'+Line.config.patterns+'/full.dat')
             sys.stderr.write(str(e) + '\n')
             sys.stderr.write('CUDA init failed. Using slow CPU method instead.\n')
         Line.try_cuda = False
