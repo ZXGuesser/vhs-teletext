@@ -193,7 +193,7 @@ class Line(object):
                 else:
                     bytes_array[3:] = Line.f.match(bits_array[40:368]) # TODO: proper codings
             elif m.row < 30:
-                bytes_array[3:] = Line.f.match(bits_array[40:368]) # TODO: proper codings
+                bytes_array[3:] = Line.f.match(bits_array[40:368]) # TODO: proper codings for packet 28 and 29
             elif m.row == 30 and m.magazine == 8: # BDSP
                 bytes_array[3:9] = Line.h.match(bits_array[40:104]) # initial page
                 if d.dc in [2, 3]:
@@ -201,8 +201,19 @@ class Line(object):
                 else:
                     bytes_array[9:22] = Line.f.match(bits_array[88:208])  # 8-bit data
                 bytes_array[22:] = Line.p.match(bits_array[192:368]) # status display
-            else:
-                bytes_array[3:] = Line.f.match(bits_array[40:368]) # TODO: proper codings
+            else: # Independent Data Lines
+                # d.dc is FT/SB
+                bytes_array[3:4] = Line.h.match(bits_array[40:64]) # IAL/CB/AI
+                
+                if m.magazine == 4: # datachannel 4 or 12 assigned to low bit-rate audio
+                    bytes_array[4:] = Line.f.match(bits_array[48:368]) # audio data
+                elif (d.dc & 1) == 0: # format A
+                    bytes_array[4:] = Line.f.match(bits_array[48:368]) # TODO: proper codings
+                    # format A may have bytes 4-9 hamming 8/4 coded based on IAL
+                else: # format B (or reserved for future use)
+                    bytes_array[4:5] = Line.h.match(bits_array[48:72]) # continuity index
+                    bytes_array[5:] = Line.f.match(bits_array[56:368]) # user data and FEC
+
             return Packet(bytes_array, number=self._number, original=self._original_bytes)
         else:
             return 'filtered'
